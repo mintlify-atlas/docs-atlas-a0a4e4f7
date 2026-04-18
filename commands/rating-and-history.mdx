@@ -1,0 +1,49 @@
+---
+title: 'View player stats with Rating and History'
+description: 'Right-click any server member and select Rating and History to see their rank, MMR, win rate, recent match results, and a visual rating graph.'
+---
+
+"Rating and History" is a Discord user command that shows a full profile for any server member. To open it, right-click (or long-press on mobile) any user in your server, select **Apps**, then choose **Rating and History**. You can use it on yourself or on any other member.
+
+## Profile embed fields
+
+The bot responds with an embed containing the following fields:
+
+| Field | Description |
+|-------|-------------|
+| **Rank** | The player's current leaderboard position. Rank 1 is displayed with a 👑 icon in the embed title. |
+| **Rating** | TrueSkill rating as `mu ± sigma` (e.g. `25.00 ± 8.33`). `mu` is estimated skill; `sigma` is uncertainty. |
+| **Score** | TrueSkill exposure value (`mu - 3 * sigma`), the same metric used to sort the `/leaderboard`. |
+| **W/L** | Total wins and losses formatted as `10W 4L`. Draws are counted as 0.5W 0.5L each. |
+| **Win%** | Win rate as a percentage (e.g. `71.43%`). |
+| **Recent Results** | The last few matches as a string of ✅ (rating gained) or ❌ (rating lost) icons, left to right from oldest to newest. |
+| **History** | The 3 most recent matches, each on its own line showing team rosters, final score, and rating delta (e.g. `@alice, @bob 3 - 1 @carol, @dave (+2.30)`). |
+| **Graph** | An ASCII line chart of the player's `mu` value over all their recorded matches. Only shown when the player has at least one match. |
+
+## Example profile
+
+```
+alice 👑
+────────────────────────────────
+Rank           1
+Rating         34.12 ± 2.51
+Score          26.59
+W/L            18W 6L
+Win%           75.00%
+Recent Results ✅✅❌✅✅
+
+History
+@alice, @bob 3 - 1 @carol, @dave (+2.30)
+@alice, @eve 2 - 0 @bob, @carol (+1.80)
+@alice, @dave 1 - 2 @bob, @eve (-1.10)
+
+Graph
+ 35.00 ┤         ╭─╮
+ 33.00 ┤    ╭────╯ ╰──
+ 31.00 ┤ ╭──╯
+ 29.00 ┼─╯
+```
+
+<Note>
+  This command only shows meaningful data after the player has participated in at least one completed match. If the player has no recorded matches, their rank will show as `N/A` and the history and graph sections will be omitted.
+</Note>

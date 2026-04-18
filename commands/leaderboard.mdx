@@ -1,0 +1,40 @@
+---
+title: 'View server rankings with /leaderboard'
+description: 'Display the guild leaderboard sorted by TrueSkill exposure score, showing rank, rating, score, and win/loss record for every ranked player.'
+---
+
+The `/leaderboard` command displays a ranked table of every player who has completed at least one match in your server. Use it to see where you stand relative to other players, track rating changes over time, or settle debates about who the best player actually is.
+
+## Output columns
+
+The leaderboard is rendered as a formatted table with the following columns:
+
+| Column | Description |
+|--------|-------------|
+| **Rank** | Leaderboard position, starting at 1. Players with identical exposure scores share a rank. |
+| **Name** | The player's Discord username. |
+| **Rating** | TrueSkill rating displayed as `mu ± sigma` (e.g. `27.3451 ± 6.24`). `mu` is the estimated skill level; `sigma` represents uncertainty. |
+| **Score** | TrueSkill exposure value used for sorting (see below). |
+| **Win/Loss** | Total wins and losses formatted as `5W 3L`. |
+
+## TrueSkill exposure
+
+The **Score** column uses TrueSkill's *exposure* metric, calculated as `mu - 3 * sigma`. This is a conservative lower bound on a player's estimated skill — it penalises players with high uncertainty, which means newer players with fewer games rank lower even if their `mu` is high. As you play more matches, your `sigma` decreases and your exposure score rises toward your true `mu`.
+
+## Example output
+
+```
++---------+----------+----------------------+---------+-----------+
+|    Rank | Name     | Rating               |   Score | Win/Loss  |
+|---------+----------+----------------------+---------+-----------|
+|       1 | alice    |  34.1200 ±  2.51     | 26.5800 | 18W 6L    |
+|       2 | bob      |  31.8843 ±  3.04     | 22.7643 | 12W 8L    |
+|       3 | carol    |  29.4501 ±  3.89     | 17.7801 | 9W 9L     |
+|       4 | dave     |  26.1234 ±  5.12     | 10.7634 | 5W 7L     |
+|       5 | eve      |  25.0000 ±  8.33     |  0.0100 | 1W 2L     |
++---------+----------+----------------------+---------+-----------+
+```
+
+<Note>
+  A player only appears on the leaderboard after they have participated in at least one completed match. Players who have joined a lobby but never had a result recorded will not be listed.
+</Note>

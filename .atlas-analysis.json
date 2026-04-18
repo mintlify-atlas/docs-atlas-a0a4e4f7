@@ -1,0 +1,75 @@
+{
+  "projectType": "saas",
+  "projectName": "Matchmaker",
+  "projectDescription": "A Discord bot that creates balanced teams for custom matches using a modified TrueSkill MMR algorithm with support for margin of victory, rating decay, and ad-hoc N v M matchmaking.",
+  "theme": "palm",
+  "primaryColor": "#242424",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "configuration"
+            ]
+          },
+          {
+            "group": "Bot Commands",
+            "pages": [
+              "commands/start",
+              "commands/leaderboard",
+              "commands/history",
+              "commands/rating-and-history"
+            ]
+          },
+          {
+            "group": "How It Works",
+            "pages": [
+              "how-it-works/trueskill",
+              "how-it-works/team-balancing",
+              "how-it-works/rating-decay"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/docker",
+              "deployment/manual"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Discord slash command integration (/start, /leaderboard, /history)",
+    "Modified TrueSkill MMR algorithm with margin of victory support",
+    "Automatic team balancing optimized for match quality",
+    "Rating decay for inactive players",
+    "Match history with paginated embeds and ASCII rating graphs",
+    "Per-player stats including rank, win/loss record, and win percentage",
+    "Voice channel management to auto-move players to team channels",
+    "SQLite3 persistent backend per guild",
+    "Docker deployment support"
+  ],
+  "publicApiSurface": [
+    "/start — Start matchmaking lobby with Join/Leave/Start Game buttons",
+    "/leaderboard — Display ranked leaderboard by TrueSkill exposure score",
+    "/history — Paginated guild-wide match history with embeds",
+    "Rating and History (user command) — Per-player stats with rating graph",
+    "/test — Generate test matches (admin only, requires kick_members permission)",
+    "rate_with_round_score(winners, losers, winner_score, loser_score) — Modified TrueSkill rating with margin of victory",
+    "win_probability(a, b) — Calculate win probability for two teams",
+    "make_teams(players, guildid) — Balance teams from player pool",
+    "record_result(team_a, team_b, team_a_score, team_b_score, guildid) — Record match result and update ratings",
+    "get_rating(userid, guildid) — Get TrueSkill rating with decay applied",
+    "get_history(guildid, userid) — Fetch match history for guild or player",
+    "get_ranks(players, guildid) — Get leaderboard positions for players"
+  ]
+}

@@ -1,0 +1,96 @@
+---
+title: "How Matchmaker balances teams"
+description: "Matchmaker generates 25 random team splits and selects the one with the highest TrueSkill match quality score to create the most balanced match."
+---
+
+Matchmaker automatically divides players into two teams by evaluating multiple random assignments and selecting the most balanced one. Rather than relying on a single deterministic split, it samples a pool of random arrangements and uses TrueSkill's match quality metric to pick the fairest option.
+
+## The balancing algorithm
+
+The process runs every time a match is created:
+
+<Steps>
+  <Step title="Fetch current ratings">
+    Ratings are retrieved for all players in the lobby, with [rating decay](/how-it-works/rating-decay) applied at read-time to account for inactivity.
+  </Step>
+  <Step title="Generate 25 random splits">
+    The player list is shuffled 25 times (`pool=25`). For each shuffle, the first half of the list becomes Team A and the second half becomes Team B.
+  </Step>
+  <Step title="Score each split">
+    TrueSkill's `ts.quality()` function evaluates how balanced each split is. The split with the highest quality score is kept.
+  </Step>
+  <Step title="Sort players within each team">
+    Players on each team are ordered by rating (ascending), so the lineup is presented consistently in match embeds.
+  </Step>
+</Steps>
+
+Here is the full implementation:
+
+```python
+# backend.py
+def make_teams(players, guildid, pool=25):
+    """Make teams based on rating."""
+    guildid = str(guildid)
+    player_ratings = get_ratings(players, guildid)
+    team_a = team_b = []
+    best_quality = 0.0
+
+    # generate pool
+    for _ in range(pool):
+        random.shuffle(players)
+        team_size = len(players) // 2
+        t1 = {str(uid): player_ratings[str(uid)] for uid in players[:team_size]}
+        t2 = {str(uid): player_ratings[str(uid)] for uid in players[team_size:]}
+        quality = ts.quality([t1, t2])
+        if quality > best_quality:
+            team_a = list(t1.keys())
+            team_b = list(t2.keys())
+            best_quality = quality
+
+    # sort teams by rating
+    team_a, team_b = sorted(team_a, key=lambda x: player_ratings[x]), sorted(
+        team_b, key=lambda x: player_ratings[x]
+    )
+    a_win = win_probability(
+        [player_ratings[str(uid)] for uid in team_a],
+        [player_ratings[str(uid)] for uid in team_b],
+    )
+    b_win = win_probability(
+        [player_ratings[str(uid)] for uid in team_b],
+        [player_ratings[str(uid)] for uid in team_a],
+    )
+    return team_a, team_b, best_quality, a_win, b_win
+```
+
+<Note>
+With an odd number of players, `team_size = len(players) // 2` means Team A gets the smaller half. The extra player is always assigned to Team B.
+</Note>
+
+## What "quality" means
+
+TrueSkill's quality score is a value between 0 and 1. A score of **1.0** represents a perfectly balanced match where both teams have identical skill distributions. Lower values indicate more lopsided matchups.
+
+The **Predicted quality** number shown in the match embed footer is derived from this raw quality score using:
+
+```
+predicted_quality = (quality - 0.33) * 300
+```
+
+This scales the quality value into a more readable range for display, centering the output around typical quality values in practice.
+
+## Win probability
+
+After the best split is selected, Matchmaker calculates the win probability for each team using the combined mu and sigma of all players on that team:
+
+```python
+# CustomTrueSkill.py
+def win_probability(a, b):
+    """Returns the probability of a team_a victory."""
+    deltaMu = sum([x.mu for x in a]) - sum([x.mu for x in b])
+    sumSigma = sum([x.sigma**2 for x in a]) + sum([x.sigma**2 for x in b])
+    playerCount = len(a) + len(b)
+    denominator = math.sqrt(playerCount * (ts.BETA * ts.BETA) + sumSigma)
+    return cdf(deltaMu / denominator)
+```
+
+The percentages displayed next to each team name in the match embed come directly from this function. A higher mu advantage for one team and lower combined uncertainty produces a more confident probability estimate.

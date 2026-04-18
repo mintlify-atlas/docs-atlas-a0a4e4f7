@@ -1,0 +1,70 @@
+---
+title: "Rating decay for inactive players"
+description: "Matchmaker increases sigma for players who haven't played recently, gradually reflecting higher uncertainty in their current skill level."
+---
+
+When you haven't participated in matches for a while, your uncertainty (sigma) increases. This reflects the reality that your skill may have shifted since your last game — you might have improved or gotten rusty — and the system should be less confident in your rating until you play again.
+
+<Info>
+Decay only affects sigma (uncertainty). Your mu (skill estimate) is never reduced by inactivity. Decay purely widens the confidence interval around your existing skill estimate.
+</Info>
+
+## How decay is calculated
+
+The decay amount is based on how many seconds have passed since your last match:
+
+```
+decay = 0.001 * (seconds_since_last_match / 50000) ** 2
+```
+
+This formula is quadratic — decay grows slowly during short absences and accelerates the longer you stay inactive. Here is the full implementation:
+
+```python
+# backend.py
+def get_decay(userid, guildid, db, current_time=None):
+    """Returns the amount of decay for a user, based on time since last match."""
+    userid, guildid = str(userid), str(guildid)
+    if not current_time:
+        current_time = datetime.now()
+    last_match = time_since_last_match(userid, guildid, db, current_time=current_time)
+    if last_match:
+        return 0.001 * ((last_match / 50000) ** 2)
+    else:
+        return 0
+```
+
+If you have no match history at all, decay is 0 — the system treats you as a fresh unrated player.
+
+## Decay examples
+
+| Time since last match | Seconds | Decay added to sigma |
+| --------------------- | ------- | -------------------- |
+| ~14 hours             | 50,000  | `0.001 * 1.0² = 0.001` |
+| ~28 hours             | 100,000 | `0.001 * 2.0² = 0.004` |
+| ~44 hours             | 160,000 | `0.001 * 3.2² ≈ 0.010` |
+| ~6 days               | 500,000 | `0.001 * 10.0² = 0.100` |
+
+The quadratic growth means a player absent for three days accumulates significantly more decay than one absent for one day.
+
+## Sigma cap
+
+Decay is capped at the global default sigma (~8.33). Your uncertainty can never exceed that of a completely unrated player, no matter how long you've been away:
+
+```python
+# backend.py (get_rating)
+rating = ts.Rating(
+    current_rating.mu,
+    min(
+        current_rating.sigma + get_decay(userid, guildid, db),
+        ts.global_env().sigma,
+    ),
+)
+```
+
+## Decay is applied at read-time
+
+Decay is not written back to the database. It is calculated fresh each time your rating is read — for team balancing, leaderboard display, or win probability — and discarded afterwards. Your stored sigma only changes when you play a match.
+
+## Effect on the leaderboard
+
+Since the leaderboard ranks players by **exposure** (`mu - 3 * sigma`), a higher sigma directly lowers your displayed score. A player who was previously ranked highly but hasn't played in several days will gradually slip down the leaderboard as their uncertainty grows, even though their mu hasn't changed. Playing a match recalibrates sigma through the normal TrueSkill update, which typically brings it back down.

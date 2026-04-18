@@ -1,0 +1,107 @@
+---
+title: "Deploy Matchmaker with Docker"
+description: "Run Matchmaker as a Docker container by building the included Dockerfile and passing your Discord bot token as an environment variable."
+---
+
+Docker is the recommended way to deploy Matchmaker in production. The included `Dockerfile` installs all Python dependencies automatically, so you don't need to manage a Python environment or Poetry installation on the host machine.
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Matchmaker repository to your server:
+
+    ```bash
+    git clone https://github.com/seanchencs/matchmaker.git
+    cd matchmaker
+    ```
+  </Step>
+
+  <Step title="Build the Docker image">
+    Build the image from the included `Dockerfile`:
+
+    ```bash
+    docker build -t matchmaker .
+    ```
+
+    This installs Poetry and all production dependencies inside the image.
+  </Step>
+
+  <Step title="Run the container">
+    Start the container, passing your Discord bot token as an environment variable and mounting a volume to persist data:
+
+    ```bash
+    docker run -d --name matchmaker \
+      -e TOKEN=your_token_here \
+      -v $(pwd)/data:/app \
+      matchmaker
+    ```
+
+    The `-v $(pwd)/data:/app` flag mounts a local `data/` directory to `/app` inside the container, where the bot stores its SQLite databases.
+  </Step>
+
+  <Step title="Verify the bot is online">
+    Check the container logs to confirm the bot connected successfully:
+
+    ```bash
+    docker logs matchmaker
+    ```
+
+    You should see a line similar to `Logged in as YourBot#1234`.
+  </Step>
+</Steps>
+
+## Dockerfile
+
+The repository includes the following `Dockerfile`:
+
+```dockerfile
+FROM python:3.8
+
+RUN mkdir /app
+
+COPY ./ /app
+
+WORKDIR /app
+ENV PYTHONPATH=${PYTHONPATH}:${PWD}
+
+RUN pip3 install poetry==1.2.2
+RUN poetry config virtualenvs.create false
+RUN poetry install --no-dev
+
+CMD ["poetry", "run", "python3", "main.py"]
+```
+
+## Data persistence
+
+Matchmaker creates one SQLite `.db` file per Discord server in its working directory (`/app` inside the container). These files store all match history and player ratings.
+
+<Warning>
+  Without a volume mount, all match history and ratings will be lost when the container is restarted. Always mount a volume to `/app` to persist your data.
+</Warning>
+
+## Docker Compose
+
+<Tip>
+  Use Docker Compose to manage the container more easily, including automatic restarts and cleaner configuration. Create a `docker-compose.yml` file in the repository root:
+
+  ```yaml
+  version: '3'
+  services:
+    matchmaker:
+      build: .
+      environment:
+        - TOKEN=your_token_here
+      volumes:
+        - ./data:/app
+      restart: unless-stopped
+  ```
+
+  Then start the bot with:
+
+  ```bash
+  docker compose up -d
+  ```
+</Tip>
+
+<Note>
+  Keep your bot token secret. Never commit it to version control. Use a `.env` file (excluded from git) or your hosting provider's secret management to supply the `TOKEN` value.
+</Note>

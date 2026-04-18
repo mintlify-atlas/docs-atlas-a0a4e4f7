@@ -1,0 +1,104 @@
+---
+title: "Run Matchmaker manually with Poetry"
+description: "Run Matchmaker on any machine with Python 3.8 or newer. Install dependencies with Poetry or pip, set your bot token, and start the bot from the command line."
+---
+
+You can run Matchmaker directly on any machine with Python 3.8 or newer. Poetry handles dependency management and keeps the bot's packages isolated from the rest of your system.
+
+<Tip>
+  For production deployments, the Docker-based approach is simpler and more portable. See [Deploy Matchmaker with Docker](/deployment/docker).
+</Tip>
+
+<Steps>
+  <Step title="Install Python 3.8 or newer">
+    Download and install Python from [python.org](https://www.python.org/downloads/). Verify the version after installation:
+
+    ```bash
+    python3 --version
+    ```
+  </Step>
+
+  <Step title="Install Poetry">
+    Install Poetry using the official installer or pip:
+
+    <CodeGroup>
+
+    ```bash Official installer
+    curl -sSL https://install.python-poetry.org | python3 -
+    ```
+
+    ```bash pip
+    pip install poetry
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Clone the repository">
+    Clone the Matchmaker repository and enter the project directory:
+
+    ```bash
+    git clone https://github.com/seanchencs/matchmaker.git && cd matchmaker
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all required packages with Poetry or pip:
+
+    <CodeGroup>
+
+    ```bash Poetry
+    poetry install
+    ```
+
+    ```bash pip
+    pip install -r requirements.txt
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Set the TOKEN environment variable">
+    Matchmaker reads your Discord bot token from the `TOKEN` environment variable. You can set it in a `.env` file or export it directly in your shell:
+
+    <CodeGroup>
+
+    ```bash .env file
+    echo "TOKEN=your_token_here" > .env
+    ```
+
+    ```bash Shell export
+    export TOKEN=your_token_here
+    ```
+
+    </CodeGroup>
+
+    When a `.env` file is present in the working directory, `main.py` loads it automatically via `python-dotenv`.
+  </Step>
+
+  <Step title="Start the bot">
+    Run the bot with Poetry:
+
+    ```bash
+    poetry run python main.py
+    ```
+  </Step>
+</Steps>
+
+## Running in the background
+
+To keep the bot running after you close your terminal session on Linux, use `nohup`:
+
+```bash
+nohup poetry run python main.py &
+```
+
+The process will continue running in the background. Use `jobs` or `ps aux | grep main.py` to find the process ID if you need to stop it later.
+
+## Data storage
+
+Matchmaker creates one SQLite `.db` file per Discord server in the working directory — the directory you ran the command from. Make sure you always start the bot from the same directory so it finds the existing database files.
+
+<Note>
+  Two log files are written to the working directory each time the bot starts: `discord.log` (Discord library output) and `matchmaker.log` (application-level events). Both files are overwritten on each restart.
+</Note>

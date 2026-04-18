@@ -1,0 +1,67 @@
+---
+title: 'Starting a match with /start'
+description: 'Use /start to open a matchmaking lobby with Join and Leave buttons, auto-balance teams by TrueSkill rating, move players to voice channels, and record scores.'
+---
+
+The `/start` command is the primary way to run a match from start to finish. It opens an interactive lobby where players can join or leave, then — once you're ready — creates balanced teams using TrueSkill ratings and walks you through recording the final result.
+
+## Lobby flow
+
+When you run `/start`, the bot posts a lobby message showing the current player list alongside three buttons.
+
+- **Join**: adds you to the lobby. Your Discord mention appears in the player list immediately.
+- **Leave**: removes you from the lobby if you're already in it.
+- **Start Game**: requires at least 2 players. Clicking it forms two balanced teams and replaces the lobby message with the match embed.
+
+## Match embed
+
+After **Start Game** is clicked, the bot displays an embed with two fields side by side:
+
+- **Team A**: Discord mentions for each player assigned to Team A.
+- **Team B**: Discord mentions for each player assigned to Team B.
+
+The embed footer shows the predicted outcome for the match:
+
+```
+Team A has X% chance to win. Team B has Y% chance to win. Predicted quality: Z
+```
+
+The quality score is derived from the TrueSkill match quality value — higher means the teams are more evenly matched.
+
+## Match controls
+
+Below the match embed, three buttons let you manage the in-progress match.
+
+- **Move 🎤**: moves each player who is currently in a voice channel into their team's dedicated voice channel ("Team A" or "Team B" under the "beep boop" category). The bot creates the category and channels if they don't already exist. Click the button again — now labelled **Move Back 🎤** — to move all players in "Team A" back to "Team B".
+- **Record Result**: opens a modal with two fields — **Team A Score** and **Team B Score** — where you enter integer scores. Submitting the modal saves the result, updates all players' TrueSkill ratings, and replaces the embed with the post-match summary.
+- **Cancel**: cancels the match without recording a result.
+
+<Note>
+  Players must be in a voice channel at the time you click **Move 🎤** for the bot to move them. Players who are not in any voice channel are skipped silently.
+</Note>
+
+## Full match workflow
+
+<Steps>
+  <Step title="Run /start">
+    Type `/start` in any text channel. The bot responds with an empty lobby and the **Join**, **Leave**, and **Start Game** buttons.
+  </Step>
+  <Step title="Players join the lobby">
+    Each participant clicks **Join**. The player list updates in real time as people join or leave.
+  </Step>
+  <Step title="Click Start Game">
+    When everyone is ready, any user clicks **Start Game**. The bot requires at least 2 players; if fewer are in the lobby it sends an ephemeral error and does nothing.
+  </Step>
+  <Step title="Review teams">
+    The match embed appears showing Team A and Team B rosters alongside each team's win probability and the predicted quality score.
+  </Step>
+  <Step title="Move players (optional)">
+    Click **Move 🎤** to automatically sort players who are in voice channels into their respective team voice channels. Click **Move Back 🎤** to undo.
+  </Step>
+  <Step title="Play the match">
+    Play your game outside of Discord as normal.
+  </Step>
+  <Step title="Record the result">
+    Click **Record Result**, enter the final scores for Team A and Team B, then submit. The bot saves the result, recalculates ratings, and posts the post-match summary with each player's rating delta.
+  </Step>
+</Steps>

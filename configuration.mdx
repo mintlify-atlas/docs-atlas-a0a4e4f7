@@ -1,0 +1,86 @@
+---
+title: "Configure your Matchmaker bot"
+description: "Matchmaker has two configuration options: the TOKEN environment variable for authentication and a config.py flag to control test commands."
+---
+
+Matchmaker's configuration is intentionally minimal. You need one required value — your Discord bot token — and one optional file, `config.py`, where you can toggle test commands and adjust the timestamp format.
+
+## TOKEN environment variable
+
+The `TOKEN` variable is required. Matchmaker passes it to `bot.run()` at startup, and the bot will not connect to Discord without it.
+
+<Warning>
+  Never commit your bot token to version control. Treat it like a password — anyone with access to it can control your bot. Add `.env` to your `.gitignore` file if you store the token there.
+</Warning>
+
+You can provide the token in two ways:
+
+<CodeGroup>
+
+```bash Shell environment variable
+export TOKEN=your_bot_token_here
+```
+
+```ini .env file
+TOKEN=your_bot_token_here
+```
+
+</CodeGroup>
+
+<AccordionGroup>
+  <Accordion title="What is the .env file?">
+    A `.env` file is a plain text file in your project root that stores environment variables as `KEY=VALUE` pairs. Matchmaker uses the `python-dotenv` package to load this file automatically at startup:
+
+    ```python
+    if os.path.isfile(".env"):
+        dotenv.load_dotenv(".env")
+    ```
+
+    This means you can set `TOKEN` in `.env` instead of exporting it in every shell session. Create the file in the root of your cloned repository:
+
+    ```ini .env
+    TOKEN=your_bot_token_here
+    ```
+
+    Make sure `.env` is listed in your `.gitignore` so it is never committed to version control.
+  </Accordion>
+</AccordionGroup>
+
+## config.py options
+
+The `config.py` file in the project root exposes two settings you can edit directly:
+
+```python config.py
+show_test_commands = True
+time_format = "%a %b %d %I:%M %p"
+```
+
+### show_test_commands
+
+| | |
+|---|---|
+| **Type** | `bool` |
+| **Default** | `True` |
+
+Controls whether the `/test` command cog is loaded when the bot starts. When set to `True`, the test commands are available in your server. Set this to `False` in production deployments to hide them from your users.
+
+```python config.py
+show_test_commands = False
+```
+
+### time_format
+
+| | |
+|---|---|
+| **Type** | `str` |
+| **Default** | `"%a %b %d %I:%M %p"` |
+
+A Python [`strftime`](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes) format string defined in `config.py`. The default value produces timestamps like `Sat Apr 18 02:30 PM`.
+
+```python config.py
+time_format = "%a %b %d %I:%M %p"
+```
+
+<Note>
+  `time_format` is defined in `config.py` but is not currently imported by the rest of the application. Match title and timestamp formatting in `match.py` uses its own hardcoded format strings (`"%I:%M %p"` for the match title and `"%A, %b %d @ %I:%M %p"` for the post-match embed). This setting has no effect at runtime.
+</Note>

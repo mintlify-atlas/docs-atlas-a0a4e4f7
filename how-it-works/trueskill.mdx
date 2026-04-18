@@ -1,0 +1,76 @@
+---
+title: "TrueSkill ratings and how MMR works"
+description: "Matchmaker uses a modified TrueSkill algorithm to rate players. Each player has a mu (skill) and sigma (uncertainty) that update after every match."
+---
+
+Matchmaker uses TrueSkill, a Bayesian skill rating system developed by Microsoft, to track each player's skill level. Unlike simpler systems that assign a single number, TrueSkill models your rating as a probability distribution with two values: **mu** (your estimated skill) and **sigma** (how confident the system is in that estimate). Both values update after every match based on the outcome and the relative skill of everyone involved.
+
+## Mu, sigma, and your score
+
+**Mu (μ)** is your estimated skill level. Every new player starts at a mu of **25**. When you win, your mu increases; when you lose, it decreases. The size of the change depends on how surprising the result was — beating a much stronger opponent moves your mu more than beating a weaker one.
+
+**Sigma (σ)** represents uncertainty. New players start at roughly **8.33**, meaning the system doesn't yet have a confident read on their skill. As you play more matches, sigma decreases and your rating becomes more stable. A player with low sigma has a well-established rating that changes slowly.
+
+**Score (Exposure)** is what appears on the leaderboard. It is calculated as:
+
+```
+score = mu - 3 * sigma
+```
+
+This is a conservative lower bound — the system is saying "we're fairly confident your true skill is at least this high." New players have low scores not because their mu is low, but because their sigma is still large. As sigma shrinks with more games played, the score rises to reflect your actual skill estimate.
+
+## TrueSkill settings
+
+Matchmaker initializes TrueSkill with a low draw probability, since draws are possible in the game mode but uncommon:
+
+```python
+# main.py
+env = ts.TrueSkill(draw_probability=0.01)
+env.make_as_global()
+```
+
+Setting `draw_probability=0.01` tells the model that ties are rare. This affects how the system interprets win/loss outcomes internally — it makes wins slightly more informative and losses slightly more penalizing than they would be if draws were expected often.
+
+## Margin of victory weighting
+
+Standard TrueSkill only uses win or loss, ignoring how dominant the result was. Matchmaker adds a custom modification that scales rating changes based on the score difference. Winning by a large margin earns a bigger mu boost; winning narrowly earns a smaller one.
+
+The weight is calculated as:
+
+```
+weight_change = 1 + (score_diff / winner_score - 0.5) * factor
+```
+
+where `factor = 0.7`. A perfectly even win (score ratio of 0.5) produces a `weight_change` of exactly 1.0, leaving the standard TrueSkill delta unchanged. A more dominant win pushes `weight_change` above 1.0, amplifying the mu change.
+
+Here is the full implementation:
+
+```python
+# CustomTrueSkill.py
+def rate_with_round_score(
+    winners, losers, winner_score: int, loser_score: int, factor=0.7
+):
+    """Modified version of TrueSkill rate for use in N v M matches with margin of victory."""
+    score_diff = winner_score - loser_score
+    weight_change = 1 + (score_diff / (winner_score) - 0.5) * factor
+    w_after, l_after = ts.rate([winners, losers], ranks=[0, 1])
+    w_diffs = {id: w_after[id].mu - winners[id].mu for id in winners}
+    l_diffs = {id: l_after[id].mu - losers[id].mu for id in losers}
+    w_after = {
+        id: ts.Rating(
+            mu=winners[id].mu + w_diffs[id] * weight_change, sigma=w_after[id].sigma
+        )
+        for id in winners
+    }
+    l_after = {
+        id: ts.Rating(
+            mu=losers[id].mu + l_diffs[id] * weight_change, sigma=l_after[id].sigma
+        )
+        for id in losers
+    }
+    return w_after, l_after
+```
+
+<Note>
+Sigma is taken directly from the standard TrueSkill result and is not scaled by `weight_change`. Only the mu delta is amplified or reduced. This preserves TrueSkill's calibrated uncertainty updates while allowing score margin to influence skill estimates.
+</Note>

@@ -1,0 +1,21 @@
+---
+title: 'Browse match history with /history'
+description: 'View paginated guild-wide match history in Discord. Each page shows up to five match embeds with team rosters, rating deltas, scores, and timestamps.'
+---
+
+The `/history` command displays past match results for the whole server, ordered from most recent to oldest. It gives your community a shared record of every game that has been recorded through the bot.
+
+## Paginated embed view
+
+Results are split into pages of up to 5 matches each. Use the navigation buttons that appear below the message to move between pages. Each match is rendered as its own embed within the page containing:
+
+- **Team A** and **Team B** roster fields, showing a Discord mention for every player along with their rating delta in parentheses (e.g. `@alice (+2.30)`, `@bob (-1.15)`). A positive delta means the player's `mu` increased; negative means it decreased.
+- **Match title** showing the final score (e.g. `3 - 1`) or, for draws, `0 - 0`.
+- **Timestamp** showing the day and time the result was recorded (e.g. `Saturday, Apr 18 @ 02:45 PM`).
+- A 👑 crown icon on the winning team's field name.
+
+If no matches have been recorded yet, the bot responds with "No Matches Found."
+
+<Tip>
+  To see match history filtered to a single player — including their rating graph and win rate — right-click that player in Discord, select **Apps**, then choose **Rating and History**.
+</Tip>
